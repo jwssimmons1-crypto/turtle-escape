@@ -1,0 +1,160 @@
+import turtle
+import random
+import time
+
+# configuration variables
+num_walls = 8
+path_width = 30
+wall_color = "black"
+door_size = 15
+barrier_size = path_width
+move_amount = 10
+
+wn = turtle.Screen()
+wn.bgcolor("white")
+wn.title("Turtle Escape!")
+
+maze_painter = turtle.Turtle()
+maze_painter.color(wall_color)
+maze_painter.speed("fastest")
+
+# function to draw a door
+def draw_door(position):
+    maze_painter.forward(position)
+    maze_painter.penup()
+    maze_painter.forward(door_size)
+    maze_painter.pendown()
+
+# function to draw a barrier
+def draw_barrier(position):
+    maze_painter.forward(position)
+    maze_painter.right(90)
+    maze_painter.forward(barrier_size)
+    maze_painter.backward(barrier_size)
+    maze_painter.left(90)
+
+wall_length = path_width
+
+for i in range(num_walls * 2):
+
+    door_min = 5
+    door_max = wall_length // 3
+    barrier_min = wall_length // 3 + door_size
+    barrier_max = (wall_length * 2) // 3
+
+    if door_max < door_min or barrier_max < barrier_min:
+        maze_painter.forward(wall_length)
+
+    elif i >= (num_walls * 2) - 2:
+        maze_painter.forward(wall_length)
+
+    else:
+        door_position = random.randint(door_min, door_max)
+        barrier_position = random.randint(barrier_min, barrier_max)
+
+        if door_position < barrier_position:
+            draw_door(door_position)
+            if i >= 2:
+                draw_barrier(barrier_position - door_position - door_size)
+                maze_painter.forward(wall_length - barrier_position)
+            else:
+                maze_painter.forward(wall_length - door_position - door_size)
+        else:
+            if i >= 2:
+                draw_barrier(barrier_position)
+                draw_door(door_position - barrier_position)
+                maze_painter.forward(wall_length - door_position - door_size)
+            else:
+                draw_door(door_position)
+                maze_painter.forward(wall_length - door_position - door_size)
+
+    maze_painter.right(90)
+    wall_length = wall_length + path_width
+
+maze_painter.hideturtle()
+
+# create the maze runner turtle with a trail
+maze_runner = turtle.Turtle()
+maze_runner.shape("turtle")
+maze_runner.color("green")
+maze_runner.pencolor("blue")
+maze_runner.pensize(2)
+maze_runner.penup()
+maze_runner.goto(path_width // 2, path_width // 2)
+maze_runner.pendown()
+
+# writer turtle for messages
+writer = turtle.Turtle()
+writer.hideturtle()
+writer.penup()
+writer.goto(0, 270)
+writer.write("Press S to start!", align="center", font=("Arial", 12, "normal"))
+
+# timer variables
+start_time = 0
+running = False
+
+# updates the timer on screen every 500ms
+def update_timer():
+    if running:
+        elapsed = round(time.time() - start_time, 1)
+        writer.clear()
+        writer.write("Time: " + str(elapsed) + "s  |  S = stop  R = restart", align="center", font=("Arial", 12, "normal"))
+    wn.ontimer(update_timer, 500)
+
+def go_up():
+    maze_runner.setheading(90)
+
+def go_down():
+    maze_runner.setheading(270)
+
+def go_left():
+    maze_runner.setheading(180)
+
+def go_right():
+    maze_runner.setheading(0)
+
+def move_runner():
+    if running:
+        maze_runner.forward(move_amount)
+
+# s key starts or stops the game
+def start_stop():
+    global running, start_time
+    if running:
+        # stop - show the final time
+        running = False
+        elapsed = round(time.time() - start_time, 1)
+        writer.clear()
+        writer.write("Stopped! Your time: " + str(elapsed) + "s  |  S = start  R = restart", align="center", font=("Arial", 12, "normal"))
+    else:
+        # start
+        running = True
+        start_time = time.time()
+        writer.clear()
+        writer.write("Go!  S = stop  R = restart", align="center", font=("Arial", 12, "normal"))
+
+def restart():
+    global running, start_time
+    running = False
+    start_time = 0
+    maze_runner.clear()
+    maze_runner.penup()
+    maze_runner.goto(path_width // 2, path_width // 2)
+    maze_runner.pendown()
+    maze_runner.setheading(0)
+    writer.clear()
+    writer.write("Press S to start!", align="center", font=("Arial", 12, "normal"))
+
+update_timer()
+
+wn.onkeypress(go_up, "Up")
+wn.onkeypress(go_down, "Down")
+wn.onkeypress(go_left, "Left")
+wn.onkeypress(go_right, "Right")
+wn.onkeypress(move_runner, "g")
+wn.onkeypress(start_stop, "s")
+wn.onkeypress(restart, "r")
+wn.listen()
+
+turtle.mainloop()
