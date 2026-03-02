@@ -6,6 +6,8 @@ import time
 num_walls = 8
 path_width = 30
 wall_color = "black"
+door_size = 15
+barrier_size = path_width
 move_amount = 10
 
 wn = turtle.Screen()
@@ -16,89 +18,60 @@ maze_painter = turtle.Turtle()
 maze_painter.color(wall_color)
 maze_painter.speed("fastest")
 
-
-# PSEUDOCODE: draw_door
-#   Move forward 10 pixels to the door position
-#   Lift pen (creates the opening/gap in the wall)
-#   Move forward path_width*2 (door opening = width of the path)
-#   Put pen back down (wall continues after the door)
-def draw_door():
-    maze_painter.forward(10)
+# function to draw a door
+def draw_door(position):
+    maze_painter.forward(position)
     maze_painter.penup()
-    maze_painter.forward(path_width * 2)
+    maze_painter.forward(door_size)
     maze_painter.pendown()
 
-
-# PSEUDOCODE: draw_barrier
-#   Move forward 40 pixels past the door
-#   Turn left into the path
-#   Draw a wall path_width*2 long into the path (the barrier)
-#   Back up to the wall
-#   Turn right to continue along the wall
-def draw_barrier():
-    maze_painter.forward(40)
-    maze_painter.left(90)
-    maze_painter.forward(path_width * 2)
-    maze_painter.back(path_width * 2)
+# function to draw a barrier
+def draw_barrier(position):
+    maze_painter.forward(position)
     maze_painter.right(90)
-
-
-# PSEUDOCODE: Draw the spiral maze
-#   Start wall_length at path_width (smallest wall at center)
-#   Loop num_walls * 2 times (2 sides per ring of the spiral)
-#   Each iteration:
-#       Randomize door and barrier using range path_width*2 to wall_length - path_width*2
-#       IF wall is too short for that range, just draw straight
-#       ELSE IF door comes first:
-#           draw door, draw barrier (subtract what was drawn for door), finish wall
-#       ELSE barrier comes first:
-#           draw barrier, draw door (subtract what was drawn for barrier), finish wall
-#       Turn right 90 degrees
-#       Grow wall_length by path_width
+    maze_painter.forward(barrier_size)
+    maze_painter.backward(barrier_size)
+    maze_painter.left(90)
 
 wall_length = path_width
 
 for i in range(num_walls * 2):
 
-    # PSEUDOCODE: Calculate the valid random range for this wall
-    range_min = path_width * 2
-    range_max = wall_length - path_width * 2
+    door_min = path_width * 2
+    door_max = wall_length - path_width * 2
+    barrier_min = path_width * 2
+    barrier_max = wall_length - path_width * 2
 
-    # PSEUDOCODE: IF wall is too short to safely place features, just draw it straight
-    if range_max <= range_min:
+    if door_max < door_min or barrier_max < barrier_min:
+        maze_painter.forward(wall_length)
+
+    elif i >= (num_walls * 2) - 2:
         maze_painter.forward(wall_length)
 
     else:
-        # PSEUDOCODE: Randomize location of doors and barriers in wall
-        door = random.randint(range_min, range_max)
-        barrier = random.randint(range_min, range_max)
+        door_position = random.randint(door_min, door_max)
+        barrier_position = random.randint(barrier_min, barrier_max)
 
-        # PSEUDOCODE: IF door comes first along the wall
-        if door < barrier:
-            # draw the door
-            draw_door()
-            # draw the barrier, subtracting what was already drawn for the door
-            maze_painter.forward(barrier - door - 10 - (path_width * 2))
-            draw_barrier()
-            # finish drawing what is left of the wall
-            maze_painter.forward(wall_length - barrier - 40)
-
-        # PSEUDOCODE: ELSE barrier comes first
+        if door_position < barrier_position:
+            draw_door(door_position)
+            if i >= 2:
+                draw_barrier(barrier_position - door_position - door_size)
+                maze_painter.forward(wall_length - barrier_position)
+            else:
+                maze_painter.forward(wall_length - door_position - door_size)
         else:
-            # draw the barrier
-            draw_barrier()
-            # draw the door, subtracting what was already drawn for the barrier
-            maze_painter.forward(door - barrier - 40)
-            draw_door()
-            # finish drawing what is left of the wall
-            maze_painter.forward(wall_length - door - 10 - (path_width * 2))
+            if i >= 2:
+                draw_barrier(barrier_position)
+                draw_door(door_position - barrier_position)
+                maze_painter.forward(wall_length - door_position - door_size)
+            else:
+                draw_door(door_position)
+                maze_painter.forward(wall_length - door_position - door_size)
 
-    # PSEUDOCODE: Turn to start the next wall, grow the wall length
     maze_painter.right(90)
     wall_length = wall_length + path_width
 
 maze_painter.hideturtle()
-
 
 # create the maze runner turtle with a trail
 maze_runner = turtle.Turtle()
@@ -121,16 +94,13 @@ writer.write("Press S to start!", align="center", font=("Arial", 12, "normal"))
 start_time = 0
 running = False
 
-
 # updates the timer on screen every 500ms
 def update_timer():
     if running:
         elapsed = round(time.time() - start_time, 1)
         writer.clear()
-        writer.write("Time: " + str(elapsed) + "s  |  S = stop  R = restart",
-                     align="center", font=("Arial", 12, "normal"))
+        writer.write("Time: " + str(elapsed) + "s  |  S = stop  R = restart", align="center", font=("Arial", 12, "normal"))
     wn.ontimer(update_timer, 500)
-
 
 def go_up():
     maze_runner.setheading(90)
@@ -148,21 +118,19 @@ def move_runner():
     if running:
         maze_runner.forward(move_amount)
 
-
+# s key starts or stops the game
 def start_stop():
     global running, start_time
     if running:
         running = False
         elapsed = round(time.time() - start_time, 1)
         writer.clear()
-        writer.write("Stopped! Your time: " + str(elapsed) + "s  |  S = start  R = restart",
-                     align="center", font=("Arial", 12, "normal"))
+        writer.write("Stopped! Your time: " + str(elapsed) + "s  |  S = start  R = restart", align="center", font=("Arial", 12, "normal"))
     else:
         running = True
         start_time = time.time()
         writer.clear()
         writer.write("Go!  S = stop  R = restart", align="center", font=("Arial", 12, "normal"))
-
 
 def restart():
     global running, start_time
@@ -175,7 +143,6 @@ def restart():
     maze_runner.setheading(0)
     writer.clear()
     writer.write("Press S to start!", align="center", font=("Arial", 12, "normal"))
-
 
 update_timer()
 
